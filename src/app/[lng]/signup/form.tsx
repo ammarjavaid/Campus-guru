@@ -14,6 +14,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import Link from "next/link";
 import Image from "next/image";
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../../../firebase";
 
 interface propsType {
   modal?: Boolean;
@@ -26,7 +27,7 @@ export default function Form({
   onSuccess,
 }: propsType) {
   const params = useParams();
-  const lng = params?.lng as string || "en";
+  const lng = (params?.lng as string) || "en";
   const { t } = useTranslation(lng, "signup");
   const token = useAppSelector((state) => state.auth.jwt);
   const router = useRouter();
@@ -56,10 +57,10 @@ export default function Form({
     password: string
   ) => {
     setLoading(true);
-    createUserWithEmailAndPassword(getAuth(), email, password)
+    createUserWithEmailAndPassword(auth, email, password)
       .then((_res) => {
         // todo: handle success signup
-        console.log(_res)
+        console.log(_res);
         toast.success(t("signupSuccess"));
         if (modal && onSuccess) {
           onSuccess();
@@ -93,64 +94,63 @@ export default function Form({
     );
   };
 
-  
   return (
     <>
-      <h2 className='text-2xl font-bold text-center'>{t("heading")}</h2>
+      <h2 className="text-2xl font-bold text-center">{t("heading")}</h2>
       <form
         onSubmit={handleSubmit(handleFormSubmit)}
-        className='min-w-[100%] my-2'
+        className="min-w-[100%] my-2"
       >
-        <div className='space-y-1 flex md:flex-row sm:flex-col gap-2'>
-          <div className='flex-1'>
-            <label htmlFor='firstName'>{t("firstName")}</label>
+        <div className="space-y-1 flex md:flex-row sm:flex-col gap-2">
+          <div className="flex-1">
+            <label htmlFor="firstName">{t("firstName")}</label>
             <Input
-              type='text'
-              name='firstName'
+              type="text"
+              name="firstName"
               register={register}
               errors={errors}
             />
           </div>
-          <div className='flex-1'>
-            <label htmlFor='lastName'>{t("lastName")}</label>
+          <div className="flex-1">
+            <label htmlFor="lastName">{t("lastName")}</label>
             <Input
-              type='text'
-              name='lastName'
+              type="text"
+              name="lastName"
               register={register}
               errors={errors}
             />
           </div>
         </div>
-        <div className='space-y-1 my-4'>
-          <label htmlFor='username'>{t("username")}</label>
+        <div className="space-y-1 my-4">
+          <label htmlFor="username">{t("username")}</label>
           <Input
-            type='text'
-            name='username'
+            type="text"
+            name="username"
             register={register}
             errors={errors}
           />
         </div>
-        <div className='space-y-1 my-4'>
-          <label htmlFor='email'>{t("email")}</label>
-          <Input type='text' name='email' register={register} errors={errors} />
+        <div className="space-y-1 my-4">
+          <label htmlFor="email">{t("email")}</label>
+          <Input type="text" name="email" register={register} errors={errors} />
         </div>
-        <div className='space-y-1 my-4'>
-          <label htmlFor='password'>{t("password")}</label>
+        <div className="space-y-1 my-4">
+          <label htmlFor="password">{t("password")}</label>
           <Input
-            type='password'
-            name='password'
+            type="password"
+            name="password"
             register={register}
             errors={errors}
           />
         </div>
-        <Button className='w-full flex items-center gap-2' disabled={loading}>
+        <Button className="w-full flex items-center gap-2" disabled={loading}>
           {loading && (
             <Image
-              src='/dev/loader.gif'
+              src="/dev/loader.gif"
               width={15}
               height={15}
-              className='object-cover'
-              alt='loading'
+              className="object-cover"
+              alt="loading"
             />
           )}
           {t("signup")}
@@ -159,11 +159,11 @@ export default function Form({
       {/* <h2 className='text-lg mt-4 text-center'>{t("signInWith")}</h2> */}
       {modal ? (
         <>
-          <h2 className='text-lg mt-4 text-center'>
+          <h2 className="text-lg mt-4 text-center">
             {t("already")}
             <span
               onClick={onLoginClick}
-              className='text-blue-500 cursor-pointer'
+              className="text-blue-500 cursor-pointer"
             >
               {" "}
               {t("signIn")}
@@ -172,9 +172,9 @@ export default function Form({
         </>
       ) : (
         <>
-          <h2 className='text-lg mt-4 text-center'>
+          <h2 className="text-lg mt-4 text-center">
             {t("already")}{" "}
-            <Link href={`/${lng}/login`} className='text-blue-500'>
+            <Link href={`/${lng}/login`} className="text-blue-500">
               {" "}
               {t("signIn")}
             </Link>
