@@ -13,8 +13,9 @@ import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import Link from "next/link";
 import Image from "next/image";
-import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../../../firebase";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth, db } from "../../../firebase";
+import { collection, addDoc } from "firebase/firestore";
 
 interface propsType {
   modal?: Boolean;
@@ -58,18 +59,37 @@ export default function Form({
   ) => {
     setLoading(true);
     createUserWithEmailAndPassword(auth, email, password)
-      .then((_res) => {
+      .then(async (_res) => {
         // todo: handle success signup
-        console.log(_res);
+
         toast.success(t("signupSuccess"));
-        if (modal && onSuccess) {
+
+        try {
+          const docRef = await addDoc(collection(db, "users"), {
+            // firstName: string,
+            // lastName: string,
+            // username: string,
+            email: email,
+            password: password,
+          });
+          console.warn(docRef);
           onSuccess();
-        } else {
-          router.push(`/${lng}/login`);
+          alert("User Created");
+        } catch (e) {
+          alert("Something went wrong");
+          console.error("Error adding document: ", e);
         }
+
+        // if (modal && onSuccess) {
+
+        // } else {
+        //   router.push(`/${lng}/login`);
+        // }
+
         setLoading(false);
       })
-      .catch(() => {
+      .catch((e) => {
+        console.warn(e);
         toast.error(t("signupFail"));
         setLoading(false);
       });
