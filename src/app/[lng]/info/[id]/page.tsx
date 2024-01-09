@@ -198,7 +198,6 @@ export default function Info({
               />
               <span className='mr-4'>
                 <b>
-                  {/* מוסד לימודים: */}
                   {t("institute")}:{" "}
                 </b>
                 &nbsp;
@@ -206,7 +205,6 @@ export default function Info({
                   {course.institution && i18n.language === "he"
                     ? "אוניברסיטת תל אביב"
                     : "Tel Aviv University"}
-                  {/* {course.institution.name} */}
                 </span>
               </span>
             </div>

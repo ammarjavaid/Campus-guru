@@ -85,6 +85,7 @@ export default function ReportCourseModal({
     }
   );
 
+
   const validate = () => {
     if (!data.course_id || !data.reason) {
       return false;

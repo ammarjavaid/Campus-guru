@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import { useParams } from "next/navigation";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -22,6 +22,8 @@ import GlobeAltIcon from "@/components/icons/GlobeAltIcon";
 import { DropdownMenuSubTrigger } from "@radix-ui/react-dropdown-menu";
 import { logOut } from "@/slices/auth";
 import { useAppSelector, useAppDispatch } from "@/hooks";
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { auth } from '../../firebase';
 
 export const Header = () => {
   const params = useParams();
@@ -42,6 +44,33 @@ export const Header = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+
+
+  const [user, setUser] = useState<any | null>(null);
+
+  useEffect(() => {
+    // Listen for changes in the user's authentication state
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+    });
+
+    // Clean up the subscription when the component unmounts
+    return () => unsubscribe();
+  }, []);
+
+  const handleSignOut = () => {
+    // Sign out the user
+    signOut(auth)
+      .then(() => {
+        // Dispatch your logOut action or handle any other cleanup
+        dispatch(logOut());
+      })
+      .catch((error) => {
+        // Handle sign-out errors
+        console.error('Sign-out error:', error.message);
+      });
+  };
 
   return (
     <>
@@ -175,14 +204,15 @@ export const Header = () => {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </li>
-                {token ? (
+                {user ? (
                   <li>
                     <div
                       style={{ cursor: "pointer" }}
                       className='px-5 py-3'
                       // className='px-4 py-2 tracking-wide whitespace-nowrap w-full justify-start'
                       onClick={() => {
-                        dispatch(logOut());
+                        // dispatch(logOut());
+                        handleSignOut()
                       }}
                     >
                       <LockOpen1Icon className='text-primary opacity-50 group-hover:opacity-75 hover:opacity-75 transition-opacity' />

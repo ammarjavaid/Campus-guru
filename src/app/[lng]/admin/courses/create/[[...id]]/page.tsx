@@ -12,6 +12,8 @@ import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import courseService from "@/services/course-service";
+import { collection, addDoc } from 'firebase/firestore';
+import { db } from "@/firebase";
 
 const schema = yup.object().shape({
   number: yup
@@ -33,6 +35,17 @@ const schema = yup.object().shape({
   tags: yup.string().required("Tags is required"),
 });
 
+interface CourseData {
+  number: number;
+  credit: number;
+  hoursPerWeek: number;
+  name: string;
+  description: string;
+  institute: string;
+  faculty: string;
+  tags: string;
+}
+
 export default function CreateOrUpdateCourse() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -40,6 +53,17 @@ export default function CreateOrUpdateCourse() {
   const isNewCourse = !courseId;
 
   const [_course, setCourse] = useState<Course>();
+
+  const [formData, setFormData] = useState<CourseData>({
+    number: 0, 
+  credit: 0, 
+  hoursPerWeek: 0, 
+  name: '',
+  description: '',
+  institute: '',
+  faculty: '',
+  tags: '',
+  });
 
   const {
     register,
@@ -64,26 +88,44 @@ export default function CreateOrUpdateCourse() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courseId]);
 
+  
+  const handleChange = <T extends keyof CourseData>(fieldName: T, value: CourseData[T] | string): void => {
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      [fieldName]: value,
+    }));
+  };
+
   const handleFormSubmit = async (data: any) => {
-    if (isNewCourse) {
-      courseService
-        .createCourse(data)
-        .then(() => {
-          toast.success("course added successfully");
-          router.push("/admin/courses");
-        })
-        .catch(() => toast.error("Error occurred while adding course"));
-    } else {
-      delete data.id
-      delete data.professors
-      courseService
-        .updateCourse(data, Number(courseId))
-        .then(() => {
-          toast.success("Course updated successfully");
-          router.push("/admin/courses");
-        })
-        .catch(() => toast.error("Error occurred while updating course"));
-    }
+    // if (isNewCourse) {
+    //   courseService
+    //     .createCourse(data)
+    //     .then(() => {
+    //       toast.success("course added successfully");
+    //       router.push("/admin/courses");
+    //     })
+    //     .catch(() => toast.error("Error occurred while adding course"));
+    // } else {
+    //   delete data.id
+    //   delete data.professors
+    //   courseService
+    //     .updateCourse(data, Number(courseId))
+    //     .then(() => {
+    //       toast.success("Course updated successfully");
+    //       router.push("/admin/courses");
+    //     })
+    //     .catch(() => toast.error("Error occurred while updating course"));
+    // }
+    const coursesCollection = collection(db, 'courses');
+
+  try {
+    const docRef = await addDoc(coursesCollection, formData);
+    toast.success('Course added successfully');
+    router.push('/admin/courses');
+  } catch (error) {
+    console.error('Error adding course:', error);
+    toast.error('Error occurred while adding course');
+  }
   };
 
   return (
@@ -127,6 +169,8 @@ export default function CreateOrUpdateCourse() {
                       errors={errors}
                       autoCapitalize="false"
                       placeholder="Enter course number"
+                      value={formData.number}
+                      onChange={(e) => handleChange('number', e.target.value)}
                     />
                   </div>
                   <div>
@@ -142,6 +186,8 @@ export default function CreateOrUpdateCourse() {
                       errors={errors}
                       autoCapitalize="false"
                       placeholder="Enter course name"
+                      value={formData.name}
+                      onChange={(e) => handleChange('name', e.target.value)}
                     />
                   </div>
                   <div>
@@ -157,6 +203,8 @@ export default function CreateOrUpdateCourse() {
                       errors={errors}
                       autoCapitalize="false"
                       placeholder="Enter course description"
+                      value={formData.description}
+                      onChange={(e) => handleChange('description', e.target.value)}
                     />
                   </div>
                   <div>
@@ -172,6 +220,8 @@ export default function CreateOrUpdateCourse() {
                       errors={errors}
                       autoCapitalize="false"
                       placeholder="Enter course credit"
+                      value={formData.credit}
+                      onChange={(e) => handleChange('credit', e.target.value)}
                     />
                   </div>
                   <div>
@@ -187,6 +237,8 @@ export default function CreateOrUpdateCourse() {
                       errors={errors}
                       autoCapitalize="false"
                       placeholder="Enter course hours per week"
+                      value={formData.hoursPerWeek}
+                      onChange={(e) => handleChange('hoursPerWeek', e.target.value)}
                     />
                   </div>
                   <div>
@@ -202,6 +254,8 @@ export default function CreateOrUpdateCourse() {
                       errors={errors}
                       autoCapitalize="false"
                       placeholder="Enter institute name"
+                      value={formData.institute}
+                      onChange={(e) => handleChange('institute', e.target.value)}
                     />
                   </div>
                   <div>
@@ -217,6 +271,8 @@ export default function CreateOrUpdateCourse() {
                       errors={errors}
                       autoCapitalize="false"
                       placeholder="Enter faculty name"
+                      value={formData.faculty}
+                      onChange={(e) => handleChange('faculty', e.target.value)}
                     />
                   </div>
                   <div>
@@ -232,6 +288,8 @@ export default function CreateOrUpdateCourse() {
                       errors={errors}
                       autoCapitalize="false"
                       placeholder="Enter tags separated by commas"
+                      value={formData.tags}
+                      onChange={(e) => handleChange('tags', e.target.value)}
                     />
                   </div>
                 </div>

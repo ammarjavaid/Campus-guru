@@ -12,6 +12,8 @@ import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import professorService from "@/services/professor-service";
+import { collection, addDoc } from 'firebase/firestore';
+import { db } from "@/firebase";
 
 const schema = yup.object().shape({
   name: yup.string().required("Professor name is required"),
@@ -19,6 +21,14 @@ const schema = yup.object().shape({
   faculty: yup.string().required("Faculty is required"),
   tags: yup.string().required("Tags is required")
 });
+
+
+interface ProfessorData {
+  name: string;
+  institute: string;
+  faculty: string;
+  tags: string;
+}
 
 export default function CreateOrUpdateProfessor() {
   const searchParams = useSearchParams();
@@ -51,25 +61,56 @@ export default function CreateOrUpdateProfessor() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [professorId]);
 
+
+  const [formData, setFormData] = useState<ProfessorData>({
+    name: '',
+    institute: '',
+    faculty: '',
+    tags: '',
+  });
+
+  const handleChange = (fieldName: string, value: string): void => {
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      [fieldName]: value,
+    }));
+  };
+
   const handleFormSubmit = async (data: any) => {
-    if (isNewProfessor) {
-      professorService
-        .createProfessor(data)
-        .then(() => {
-          toast.success("Professor added successfully");
-          router.push("/admin/professors");
-        })
-        .catch(() => toast.error("Error occurred while adding professor"));
-    } else {
-      delete data.id
-      delete data.courses
-      professorService
-        .updateProfessor(data, Number(professorId))
-        .then(() => {
-          toast.success("Professor updated successfully");
-          router.push("/admin/professors");
-        })
-        .catch(() => toast.error("Error occurred while updating professor"));
+    // if (isNewProfessor) {
+    //   professorService
+    //     .createProfessor(data)
+    //     .then(() => {
+    //       toast.success("Professor added successfully");
+    //       router.push("/admin/professors");
+    //     })
+    //     .catch(() => toast.error("Error occurred while adding professor"));
+    // } else {
+    //   delete data.id
+    //   delete data.courses
+    //   professorService
+    //     .updateProfessor(data, Number(professorId))
+    //     .then(() => {
+    //       toast.success("Professor updated successfully");
+    //       router.push("/admin/professors");
+    //     })
+    //     .catch(() => toast.error("Error occurred while updating professor"));
+    // }
+    try {
+      const docRef = await addDoc(collection(db, "professors"), {
+        name: formData.name,
+        institute: formData.institute,
+        faculty: formData.faculty,
+        tags: formData.tags,
+      });
+      // console.log(docRef);
+      // onSuccess();
+      toast.success('Professor added successfully');
+      router.push('/admin/professors');
+    } catch (e) {
+     
+      alert("Something went wrong");
+      console.error("Error adding document: ", e);
     }
   };
 
@@ -114,6 +155,8 @@ export default function CreateOrUpdateProfessor() {
                       errors={errors}
                       autoCapitalize="false"
                       placeholder="Enter professor name"
+                      value={formData.name}
+                      onChange={(e) => handleChange('name', e.target.value)}
                     />
                   </div>
                   <div>
@@ -129,6 +172,8 @@ export default function CreateOrUpdateProfessor() {
                       errors={errors}
                       autoCapitalize="false"
                       placeholder="Enter institute name"
+                      value={formData.institute}
+                      onChange={(e) => handleChange('institute', e.target.value)}
                     />
                   </div>
                   <div>
@@ -144,6 +189,8 @@ export default function CreateOrUpdateProfessor() {
                       errors={errors}
                       autoCapitalize="false"
                       placeholder="Enter faculty name"
+                      value={formData.faculty}
+                      onChange={(e) => handleChange('faculty', e.target.value)}
                     />
                   </div>
                   <div>
@@ -159,6 +206,8 @@ export default function CreateOrUpdateProfessor() {
                       errors={errors}
                       autoCapitalize="false"
                       placeholder="Enter tags separated by commas"
+                      value={formData.tags}
+                      onChange={(e) => handleChange('tags', e.target.value)}
                     />
                   </div>
                 </div>

@@ -12,6 +12,8 @@ import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import relationsService from "@/services/relation-service";
+import { collection, addDoc } from "firebase/firestore";
+import { db } from "@/firebase";
 
 const schema = yup.object().shape({
   course_id: yup
@@ -23,6 +25,13 @@ const schema = yup.object().shape({
     .transform((val) => (isNaN(val) ? undefined : val))
     .required("Professor id is required"),
 });
+
+
+interface RelationData {
+  course_id: number;
+  professor_id: number;
+}
+
 
 export default function CreateOrUpdateRelation() {
   const searchParams = useSearchParams();
@@ -55,26 +64,50 @@ export default function CreateOrUpdateRelation() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [relationId]);
 
+  const [formData, setFormData] = useState<RelationData>({
+    course_id: 0, 
+    professor_id: 0,
+  });
+
+  const handleChange = (fieldName: string, value: string): void => {
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      [fieldName]: parseInt(value, 10) || 0,
+    }));
+  };
+
   const handleFormSubmit = async (data: any) => {
     console.log("DA", data);
     
-    if (isNewRelation) {
-      relationsService
-        .createRelation(data)
-        .then(() => {
-          toast.success("Relation added successfully");
-          router.push("/admin/relations");
-        })
-        .catch((error) => toast.error(error.response.data.error));
-    } else {
-      delete data.id;
-      relationsService
-        .updateRelation(data, Number(relationId))
-        .then(() => {
-          toast.success("Relation updated successfully");
-          router.push("/admin/relations");
-        })
-        .catch((error) => toast.error(error.response.data.error));
+    // if (isNewRelation) {
+    //   relationsService
+    //     .createRelation(data)
+    //     .then(() => {
+    //       toast.success("Relation added successfully");
+    //       router.push("/admin/relations");
+    //     })
+    //     .catch((error) => toast.error(error.response.data.error));
+    // } else {
+    //   delete data.id;
+    //   relationsService
+    //     .updateRelation(data, Number(relationId))
+    //     .then(() => {
+    //       toast.success("Relation updated successfully");
+    //       router.push("/admin/relations");
+    //     })
+    //     .catch((error) => toast.error(error.response.data.error));
+    // }
+    try {
+      const docRef = await addDoc(collection(db, "relations"), {
+        course_id: formData.course_id,
+        professor_id: formData.professor_id,
+      });
+      console.log(docRef);
+      // onSuccess();
+      alert("User Created");
+    } catch (e) {
+      alert("Something went wrong");
+      console.error("Error adding document: ", e);
     }
   };
 
@@ -119,6 +152,8 @@ export default function CreateOrUpdateRelation() {
                       errors={errors}
                       autoCapitalize="false"
                       placeholder="Enter course id"
+                      value={formData.course_id}
+                      onChange={(e) => handleChange('course_id', e.target.value)}
                     />
                   </div>
                   <div>
@@ -134,6 +169,8 @@ export default function CreateOrUpdateRelation() {
                       errors={errors}
                       autoCapitalize="false"
                       placeholder="Enter professor id"
+                      value={formData.professor_id}
+                      onChange={(e) => handleChange('professor_id', e.target.value)}
                     />
                   </div>
                 </div>

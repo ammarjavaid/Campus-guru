@@ -1,7 +1,7 @@
 "use client";
 export const runtime = 'edge';
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useQuery, useQueryClient } from "react-query";
 import CourseService from "@/services/course-service";
@@ -13,6 +13,9 @@ import EmptyCard from "@/components/common/EmptyCard";
 import { useTranslation } from "@/app/i18n/client";
 import Container from "@/components/common/Container";
 import professorService from "@/services/professor-service";
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from "@/firebase";
+
 
 interface propsType {
   params: {
@@ -86,6 +89,8 @@ export default function ResultsPage({ params: { lng } }: propsType) {
       setPage(parseInt(pageParam));
     }
   }, []);
+
+
   React.useEffect(() => {
     if (searchQuery) {
       if (filterBy === "professors") {
@@ -105,6 +110,28 @@ export default function ResultsPage({ params: { lng } }: propsType) {
             filteredProfessors
           );
         }
+        // const fetchData = async () => {
+        //   try {
+        //     let itemsData: any[] = [];
+      
+        //     if (searchQuery) {
+        //       const collectionName = 'professors';
+        //       const professorsCollection = collection(db, collectionName);
+        //       const professorsQuery = query(professorsCollection, where('name', '>=', searchQuery.toLowerCase()));
+      
+        //       const professorsSnapshot = await getDocs(professorsQuery);
+        //       itemsData = professorsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        //     }
+
+        //     setResults(itemsData);
+        //     setTotalItems(itemsData.length);
+        //     setIsFiltering(false);
+        //   } catch (error) {
+        //     console.error('Error occurred while fetching data', error);
+        //   }
+        // };
+      
+        // fetchData();
 
         setResults(filteredProfessors || []);
         setTotalItems(filteredProfessors ? filteredProfessors?.length : 0);
@@ -122,6 +149,7 @@ export default function ResultsPage({ params: { lng } }: propsType) {
           }) as Course[];
           queryClient.setQueryData(["courses", searchQuery], filteredCourses);
         }
+
 
         setResults(filteredCourses || []);
         setTotalItems(filteredCourses ? filteredCourses?.length : 0);

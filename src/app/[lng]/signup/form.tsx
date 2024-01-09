@@ -22,6 +22,11 @@ interface propsType {
   onLoginClick?: () => void;
   onSuccess?: () => void;
 }
+interface SignupFormData {
+  firstName: string;
+  lastName: string;
+  username: string;
+}
 export default function Form({
   modal = false,
   onLoginClick,
@@ -48,6 +53,19 @@ export default function Form({
     password: yup.string().required(t("passwordRequired")),
   });
 
+  const [formData, setFormData] = useState<SignupFormData>({
+    firstName: '',
+    lastName: '',
+    username: '',
+  });
+
+  const handleChange = (fieldName: string, value: string): void => {
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      [fieldName]: value,
+    }));
+  };
+
   // const auth = getAuth()
 
   const handleSignup = (
@@ -66,16 +84,18 @@ export default function Form({
 
         try {
           const docRef = await addDoc(collection(db, "users"), {
-            // firstName: string,
-            // lastName: string,
-            // username: string,
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            username: formData.username,
             email: email,
             password: password,
           });
-          console.warn(docRef);
-          onSuccess();
+          console.log(docRef);
+          // onSuccess();
           alert("User Created");
+          router.push(`/${lng}/login`);
         } catch (e) {
+         
           alert("Something went wrong");
           console.error("Error adding document: ", e);
         }
@@ -88,8 +108,20 @@ export default function Form({
 
         setLoading(false);
       })
-      .catch((e) => {
-        console.warn(e);
+      .catch((error) => {
+        if (error.code === 'auth/email-already-in-use') {
+          console.error('Email already in use:', error);
+          toast.error('Email is already in use. Please choose a different email.');
+        } else if (error.code === 'auth/invalid-email') {
+          console.error('Invalid email:', error);
+          toast.error('Invalid email format. Please enter a valid email address.');
+        } else if (error.code === 'auth/weak-password') {
+          console.error('Weak password:', error);
+          toast.error('Weak password. Please choose a stronger password.');
+        } else {
+          console.error('Other error:', error);
+          toast.error('Signup failed. Please try again.');
+        }
         toast.error(t("signupFail"));
         setLoading(false);
       });
@@ -129,6 +161,8 @@ export default function Form({
               name="firstName"
               register={register}
               errors={errors}
+              value={formData.firstName}
+              onChange={(e) => handleChange('firstName', e.target.value)}
             />
           </div>
           <div className="flex-1">
@@ -138,6 +172,8 @@ export default function Form({
               name="lastName"
               register={register}
               errors={errors}
+              value={formData.lastName}
+              onChange={(e) => handleChange('lastName', e.target.value)}
             />
           </div>
         </div>
@@ -148,6 +184,8 @@ export default function Form({
             name="username"
             register={register}
             errors={errors}
+            value={formData.username}
+            onChange={(e) => handleChange('username', e.target.value)}
           />
         </div>
         <div className="space-y-1 my-4">

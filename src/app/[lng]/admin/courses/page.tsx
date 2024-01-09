@@ -10,36 +10,97 @@ import clsx from "clsx";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import { getDocs, collection, deleteDoc, doc } from 'firebase/firestore';
+import { db } from "@/firebase";
+
+
+interface Course {
+  id: string,
+  number: number;
+credit: number;
+hoursPerWeek: number;
+name: string;
+description: string;
+institute: string;
+faculty: string;
+tags: string;
+}
+
 
 function CoursesPage() {
-  const [courses, setCourses] = useState<Course[]>([]);
-  useEffect(() => {
-    courseService
-      .getCourses()
-      .then((response) => setCourses(response))
-      .catch((_err) => {
-        toast.error("Error occurred while Fetching users");
-      });
-  }, []);
+  // const [courses, setCourses] = useState<Course[]>([]);
+  // useEffect(() => {
+  //   courseService
+  //     .getCourses()
+  //     .then((response) => setCourses(response))
+  //     .catch((_err) => {
+  //       toast.error("Error occurred while Fetching users");
+  //     });
+  // }, []);
 
-  const deleteCourse = (id: number, name: string) => {
-    if (
-      !window.confirm(
-        `Are you sure you want to delete course with name ${name}?`
-      )
-    ) {
-      return;
+  // const deleteCourse = (id: number, name: string) => {
+  //   if (
+  //     !window.confirm(
+  //       `Are you sure you want to delete course with name ${name}?`
+  //     )
+  //   ) {
+  //     return;
+  //   }
+  //   courseService
+  //     .deleteCourse(id)
+  //     .then(() => {
+  //       toast.success(`Course with name ${name} has been deleted!`);
+  //       window.location.reload();
+  //     })
+  //     .catch(() => {
+  //       toast.error("Error occurred while deleting Course");
+  //     });
+  // };
+
+
+const [courses, setCourses] = useState<Course[]>([]);
+const [searchTerm, setSearchTerm] = useState<string>('');
+
+useEffect(() => {
+  // Fetch courses from Firestore
+  const fetchCourses = async () => {
+    try {
+      const coursesCollection = collection(db, 'courses');
+      const coursesSnapshot = await getDocs(coursesCollection);
+
+      const courseData: Course[] = coursesSnapshot.docs.map((doc) => {
+        const data = doc.data();
+        return data ? { id: doc.id, ...data } : null;
+      }).filter((course): course is Course => course !== null);
+
+      setCourses(courseData);
+    } catch (error) {
+      toast.error('Error occurred while fetching courses');
     }
-    courseService
-      .deleteCourse(id)
-      .then(() => {
-        toast.success(`Course with name ${name} has been deleted!`);
-        window.location.reload();
-      })
-      .catch(() => {
-        toast.error("Error occurred while deleting Course");
-      });
   };
+
+  fetchCourses();
+}, []);
+
+
+const deleteCourse = async (id: string, name: string) => {
+  if (!window.confirm(`Are you sure you want to delete user with username ${name}?`)) {
+    return;
+  }
+
+  try {
+    // Delete user from Firestore
+    const userDocRef = doc(db, 'courses', id);
+    await deleteDoc(userDocRef);
+
+    toast.success(`User with username ${name} has been deleted!`);
+    // Optionally, update state or trigger a re-fetch of users
+    setCourses((prevUsers) => prevUsers.filter((user) => user.id !== id));
+  } catch (error) {
+    toast.error('Error occurred while deleting user');
+  }
+};
+
 
   const renderCoursesTBody = (courses: Course[]) => {
     return (
@@ -64,7 +125,7 @@ function CoursesPage() {
               <td className='tw-table-td text-center'>{course.institute}</td>
               <td className='tw-table-td text-center'>{course.faculty}</td>
               <td className='tw-table-td text-center'>
-                {course.tags.join(",")}
+                {/* {course.tags.join(",")} */}
               </td>
               {/* <td className="tw-table-td text-center">
                 {course.contentReview}
@@ -88,6 +149,11 @@ function CoursesPage() {
                   </Button>
                 </Link>
               </td>
+              <td className="tw-table-td text-center"></td>
+              <td className="tw-table-td text-center"></td>
+              <td className="tw-table-td text-center"></td>
+              <td className="tw-table-td text-center"></td>
+              <td className="tw-table-td text-center"></td>
               <td className='tw-table-td text-center'>
                 <div className='flex justify-center'>
                   <TrashIcon
@@ -112,6 +178,16 @@ function CoursesPage() {
             Manage Courses
           </h1>
         </div>
+
+        <div className='sm:w-64 mt-4 sm:mt-0 mr-5'>
+      <input
+        type='text'
+        placeholder='Search courses...'
+        className='w-full px-4 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300'
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
+    </div>
 
         <div className='mt-4 sm:mt-0 flex justify-evenly gap-3 flex-col lg:flex-row'>
           <Link href={`/admin/courses/create`}>
@@ -150,7 +226,11 @@ function CoursesPage() {
                     "Reviews",
                     "Action",
                   ]}
-                  items={courses}
+                  // items={courses}
+                  items={courses.filter(course =>
+                    course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    course.description.toLowerCase().includes(searchTerm.toLowerCase())
+                  )}
                   renderComponent={renderCoursesTBody}
                 />
               </div>
@@ -166,8 +246,8 @@ function CoursesPage() {
 
 export default function Courses() {
   return (
-    <CheckAuth>
+    // <CheckAuth>
       <CoursesPage />
-    </CheckAuth>
+    // </CheckAuth>
   );
 }

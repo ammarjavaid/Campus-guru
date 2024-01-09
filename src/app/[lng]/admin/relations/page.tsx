@@ -10,34 +10,87 @@ import clsx from "clsx";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import { getDocs, collection, deleteDoc, doc } from 'firebase/firestore';
+import { db } from "@/firebase";
+
+
+interface RelationData {
+  id: string;
+  course_id: number;
+  professor_id: number;
+}
 
 function CoursesPage() {
-  const [relations, setRelations] = useState<Relation[]>([]);
+  // const [relations, setRelations] = useState<Relation[]>([]);
+  // useEffect(() => {
+  //   relationsService
+  //     .getRelations()
+  //     .then((response) => setRelations(response))
+  //     .catch((_err) => {
+  //       toast.error("Error occurred while Fetching Relations");
+  //     });
+  // }, []);
+
+  // const deleteRelation = (id: number) => {
+  //   if (
+  //     !window.confirm(`Are you sure you want to delete relation with id ${id}?`)
+  //   ) {
+  //     return;
+  //   }
+  //   relationsService
+  //     .deleteRelation(id)
+  //     .then(() => {
+  //       toast.success(`Relation with id ${id} has been deleted!`);
+  //       window.location.reload();
+  //     })
+  //     .catch(() => {
+  //       toast.error("Error occurred while deleting Relation");
+  //     });
+  // };
+
+  const [relations, setRelations] = useState<RelationData[]>([]);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+
   useEffect(() => {
-    relationsService
-      .getRelations()
-      .then((response) => setRelations(response))
-      .catch((_err) => {
-        toast.error("Error occurred while Fetching Relations");
-      });
+
+    const fetchRelations = async () => {
+      try {
+        const relationsCollection = collection(db, 'relations');
+        const relationsSnapshot = await getDocs(relationsCollection);
+  
+        const relationData: RelationData[] = relationsSnapshot.docs.map((doc) => {
+          const data = doc.data();
+          return data ? { course_id: data.course_id, professor_id: data.professor_id } : null;
+        }).filter((relation): relation is RelationData => relation !== null);
+  
+        setRelations(relationData);
+      } catch (error) {
+        toast.error('Error occurred while fetching relations');
+      }
+    };
+  
+    fetchRelations();
   }, []);
 
-  const deleteRelation = (id: number) => {
-    if (
-      !window.confirm(`Are you sure you want to delete relation with id ${id}?`)
-    ) {
+  // console.log(relations, 'relations')
+
+  const deleteRelation = async (id: string) => {
+    if (!window.confirm(`Are you sure you want to delete relation with ID ${id}?`)) {
       return;
     }
-    relationsService
-      .deleteRelation(id)
-      .then(() => {
-        toast.success(`Relation with id ${id} has been deleted!`);
-        window.location.reload();
-      })
-      .catch(() => {
-        toast.error("Error occurred while deleting Relation");
-      });
-  };
+  
+    try {
+      // Delete relation from Firestore
+      const relationDocRef = doc(db, 'relations', id);
+      await deleteDoc(relationDocRef);
+  
+      toast.success(`Relation with ID ${id} has been deleted!`);
+      // Optionally, update state or trigger a re-fetch of relations
+      setRelations((prevRelations) => prevRelations.filter((relation) => relation.id !== id));
+    } catch (error) {
+      toast.error('Error occurred while deleting relation');
+    }
+  }
 
   const renderRelationsTBody = (relations: Relation[]) => {
     return (
@@ -60,7 +113,7 @@ function CoursesPage() {
               <td className='tw-table-td text-center'>
                 <div className='flex justify-center'>
                   <TrashIcon
-                    onClick={() => deleteRelation(relation.id)}
+                    // onClick={() => deleteRelation(relation.id)}
                     className='h-6 w-6 stroke-red-600 cursor-pointer'
                   />
                 </div>
@@ -81,6 +134,16 @@ function CoursesPage() {
             Manage Relations
           </h1>
         </div>
+
+        <div className='sm:w-64 mt-4 sm:mt-0 mr-5'>
+      <input
+        type='text'
+        placeholder='Search relation...'
+        className='w-full px-4 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300'
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
+    </div>
 
         <div className='mt-4 sm:mt-0 flex justify-evenly gap-3 flex-col lg:flex-row'>
           <Link href={`/admin/relations/create`}>
@@ -109,6 +172,9 @@ function CoursesPage() {
                     "Action",
                   ]}
                   items={relations}
+                  // items={relations.filter(relation =>
+                  //   // relation.course_id.toLowerCase().includes(searchTerm.toLowerCase())
+                  // )}
                   renderComponent={renderRelationsTBody}
                 />
               </div>
@@ -124,8 +190,8 @@ function CoursesPage() {
 
 export default function Courses() {
   return (
-    <CheckAuth>
+    // <CheckAuth>
       <CoursesPage />
-    </CheckAuth>
+    // </CheckAuth>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 
 import { useMutation } from "react-query";
@@ -23,6 +23,9 @@ import { useParams } from "next/navigation";
 import { useAppSelector } from "@/hooks";
 import LoginModal from "@/app/[lng]/login/modal";
 import { AxiosError } from "axios";
+import { auth, db } from "../../firebase";
+import { collection, addDoc } from "firebase/firestore";
+import { onAuthStateChanged } from 'firebase/auth';
 
 interface proptypes {
   courseId: number;
@@ -41,7 +44,7 @@ export default function ReviewCourseModal({
   const params = useParams();
   const lng: string = params?.lng as string;
   const { t } = useTranslation(lng, "common");
-  const auth = useAppSelector((state) => state.auth);
+  // const auth = useAppSelector((state) => state.auth);
 
   const initialData = {
     course_id: courseId,
@@ -72,6 +75,19 @@ export default function ReviewCourseModal({
     }
   );
 
+  const [user, setUser] = useState<any | null>(null);
+
+  useEffect(() => {
+
+    // Listen for changes in the user's authentication state
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+    });
+
+    // Clean up the subscription when the component unmounts
+    return () => unsubscribe();
+  }, []);
+
   const validate = () => {
     return !(
       !data.course_id ||
@@ -83,19 +99,43 @@ export default function ReviewCourseModal({
     );
   };
 
-  const submitHandler = () => {
+  const submitHandler = async() => {
     const enabled = validate();
     if (!enabled) {
       return;
-    }
-    if (!auth || !auth.jwt) {
+    }else if(!user){
       setLoginModalOpen(true);
       return;
     }
-    mutate({
-      ...data,
-    });
+
+    if(user){
+      try {
+        const docRef = await addDoc(collection(db, "usersReview"), {
+          author: data.author,
+          comment: data.comment,
+          structureReview: data.structureReview,
+          difficultyReview: data.difficultyReview,
+          contentReview: data.contentReview,
+          relevanceReview: data.relevanceReview,
+        });
+        console.log(docRef);
+        onClose();
+      } catch (e) {
+        alert("Something went wrong");
+        console.error("Error adding document: ", e);
+      }
+    }
+    // if (!auth || !auth.jwt) {
+    //   setLoginModalOpen(true);
+    //   return;
+    // }
+  
+    // mutate({
+    //   ...data,
+    // });
   };
+
+  console.log(data)
 
   return (
     <Dialog open={open} onOpenChange={onClose} modal>
